@@ -4,12 +4,18 @@ import pandas as pd
 import json
 import os
 from datetime import datetime
+from streamlit_gsheets import GSheetsConnection
 
 # --- SETUP ---
-MY_API_KEY = "AIzaSyDnMGvmbrlUTb-viegZ87I0WfjhezX8G2s"
-genai.configure(api_key=MY_API_KEY)
-model = genai.GenerativeModel('gemini-2.5-flash')
+if "GEMINI_KEY" in st.secrets:
+    MY_API_KEY = st.secrets["GEMINI_KEY"]
+else:
+    # This fall-back allows you to still run it locally for testing
+    MY_API_KEY = "AIzaSyDnMGvmbrlUTb-viegZ87I0WfjhezX8G2s"
 
+genai.configure(api_key=MY_API_KEY)
+
+model = genai.GenerativeModel('gemini-1.5-flash')
 st.set_page_config(page_title="Business Daybook", page_icon="📈", layout="wide")
 st.title("📂 Digital Daybook & Finance Tracker")
 
@@ -22,27 +28,24 @@ today_str = datetime.now().strftime("%Y-%m-%d")
 this_month = datetime.now().strftime("%Y-%m")
 
 # --- UPDATED SAVE FUNCTION ---
+conn = st.connection("gsheets", type=GSheetsConnection)
+
 def save_data(new_df):
-    file_path = "my_expenses.csv"
-    # Add Date, Month, and exact Time for every entry
+    # Fetch existing data from the sheet
+    existing_data = conn.read(worksheet="Sheet1")
+    
+    # Add new info
     new_df['Date'] = today_str
     new_df['Month'] = this_month
     new_df['Log_Time'] = datetime.now().strftime("%H:%M:%S")
     
-    if os.path.exists(file_path):
-        existing_df = pd.read_csv(file_path)
-        # Check if item exists ON THE SAME DATE before updating
-        for index, row in new_df.iterrows():
-            mask = (existing_df['Item'].str.lower() == row['Item'].lower()) & (existing_df['Date'] == row['Date'])
-            if mask.any():
-                existing_df.loc[mask, 'Amount'] += row['Amount']
-            else:
-                existing_df = pd.concat([existing_df, pd.DataFrame([row])], ignore_index=True)
-        existing_df.to_csv(file_path, index=False)
-    else:
-        new_df.to_csv(file_path, index=False)
+    # Combine old and new
+    updated_df = pd.concat([existing_data, new_df], ignore_index=True)
     
-    st.success(f"✅ Records for {today_str} Updated!")
+    # 2. Write back to Google Sheets
+    conn.update(worksheet="Sheet1", data=updated_df)
+    
+    st.success("✅ Data synced to Google Sheets!")
     st.session_state.processed_data = None
 
 # --- NAVIGATION TABS ---
