@@ -15,7 +15,7 @@ else:
 
 genai.configure(api_key=MY_API_KEY)
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 st.set_page_config(page_title="Business Daybook", page_icon="📈", layout="wide")
 st.title("📂 Digital Daybook & Finance Tracker")
 
@@ -105,4 +105,5 @@ with tab2:
         st.line_chart(daily_trend)
     else:
         st.info("No data available for reports.")
+
 
