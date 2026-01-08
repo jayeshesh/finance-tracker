@@ -1,5 +1,4 @@
 streamlit
-google-genai
+groq
 pandas
 st-gsheets-connection
-groq
