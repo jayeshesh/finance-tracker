@@ -2,3 +2,4 @@ streamlit
 google-genai
 pandas
 st-gsheets-connection
+groq
